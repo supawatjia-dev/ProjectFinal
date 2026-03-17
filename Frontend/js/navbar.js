@@ -6,7 +6,7 @@ function renderNavbar(activePage) {
   const isTeacher = user?.role === 'teacher'
 
   nav.innerHTML = `
-    <a href="courses.html" class="navbar-brand">🎓 LearnHub</a>
+    <a href="courses.html" class="navbar-brand">🎓 The Codex</a>
     <ul class="navbar-nav">
       <li><a href="courses.html" class="${activePage === 'courses' ? 'active' : ''}">📚 คอร์สทั้งหมด</a></li>
       ${!isTeacher ? `<li><a href="my-courses.html" class="${activePage === 'my-courses' ? 'active' : ''}">🎯 คอร์สของฉัน</a></li>` : ''}

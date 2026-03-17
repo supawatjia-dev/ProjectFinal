@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LearnHub — เรียน</title>
+  <title>The Codex — เรียน</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     .learn-layout {
@@ -286,7 +286,7 @@
       try {
         const course = await Courses.getById(courseId)
         document.getElementById('course-name').textContent = course.name
-        document.title = `LearnHub — ${course.name}`
+        document.title = `The Codex — ${course.name}`
 
         lessons = await Lessons.getByCourse(courseId)
 

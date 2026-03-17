@@ -22,7 +22,7 @@ const getById = async (req, res, next) => {
 const create = async (req, res, next) => {
   try {
     const result = await ExerciseModel.create(req.body)
-    res.json({ message: 'create ok', data: result })
+    res.json({ message: 'สร้างข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }
@@ -31,7 +31,7 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const result = await ExerciseModel.update(req.params.id, req.body)
-    res.json({ message: 'update ok', data: result })
+    res.json({ message: 'อัพเดตข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }
@@ -40,7 +40,7 @@ const update = async (req, res, next) => {
 const remove = async (req, res, next) => {
   try {
     const result = await ExerciseModel.remove(req.params.id)
-    res.json({ message: 'delete ok', data: result })
+    res.json({ message: 'ลบข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }
@@ -49,7 +49,7 @@ const remove = async (req, res, next) => {
 const removeByLesson = async (req, res, next) => {
   try {
     const result = await ExerciseModel.removeByLesson(req.params.lesson_id)
-    res.json({ message: 'delete ok', data: result })
+    res.json({ message: 'ลบข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }

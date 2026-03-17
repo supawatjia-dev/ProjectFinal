@@ -58,7 +58,7 @@ const create = async (req, res, next) => {
     const errors = validateUser(req.body)
     if (errors.length > 0) return res.status(400).json({ message: 'กรอกข้อมูลไม่ครบ', errors })
     const result = await UserModel.create(req.body)
-    res.json({ message: 'insert ok', data: result })
+    res.json({ message: 'เพิ่มข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }
@@ -67,7 +67,7 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const result = await UserModel.update(req.params.id, req.body)
-    res.json({ message: 'update ok', data: result })
+    res.json({ message: 'อัพเดตข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }
@@ -76,7 +76,7 @@ const update = async (req, res, next) => {
 const remove = async (req, res, next) => {
   try {
     const result = await UserModel.remove(req.params.id)
-    res.json({ message: 'delete ok', data: result })
+    res.json({ message: 'ลบข้อมูลเรียบร้อยแล้ว', data: result })
   } catch (error) {
     next(error)
   }

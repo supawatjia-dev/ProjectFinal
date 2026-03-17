@@ -1,0 +1,483 @@
+requireAuth()
+renderNavbar('management')
+
+let allUsers = [], allCourses = [], allLessons = []
+
+function switchSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+    document.querySelectorAll('.mgmt-tab').forEach(t => t.classList.remove('active'))
+    document.getElementById(`section-${name}`).classList.add('active')
+    btn.classList.add('active')
+    if (name === 'users') loadUsers()
+    if (name === 'courses') loadCourses()
+    if (name === 'lessons') loadCoursesForFilter()
+    if (name === 'exercises') loadLessonsForFilter()
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show') }
+
+function confirmDelete(message, onConfirm) {
+    document.getElementById('confirm-message').textContent = message
+    document.getElementById('confirm-modal').classList.add('show')
+    document.getElementById('confirm-ok').onclick = () => { closeModal('confirm-modal'); onConfirm() }
+}
+
+// ===== USERS =====
+async function loadUsers() {
+    try {
+        allUsers = await Users.getAll()
+        document.getElementById('user-count').textContent = `(${allUsers.length} คน)`
+        await renderUsers(allUsers)
+    } catch (e) { console.error(e) }
+}
+
+async function renderUsers(users) {
+    const tbody = document.getElementById('users-table')
+    if (!users.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">ไม่พบ user</td></tr>`
+        return
+    }
+    let html = ''
+    for (const u of users) {
+        let enrollments = []
+        try { enrollments = await Enrollments.getByUser(u.id) } catch { }
+        const enrollHtml = enrollments.length
+            ? enrollments.map(e => `<span class="enroll-tag">📚 ${e.course_name || e.name}</span>`).join('')
+            : '<span style="color:var(--text-muted);font-size:0.8rem">-</span>'
+        const savedAvatar = u.avatar
+        const avatarHtml = savedAvatar
+            ? `<div class="user-avatar" style="background:none"><img src="${savedAvatar}" style="width:38px;height:38px;border-radius:50%;object-fit:cover"></div>`
+            : `<div class="user-avatar">${(u.firstname || '?')[0].toUpperCase()}</div>`
+        html += `<tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              ${avatarHtml}
+              <div>
+                <div style="font-weight:700;color:var(--white)">${u.firstname} ${u.lastname}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted)">#${u.id}</div>
+              </div>
+            </div>
+          </td>
+          <td style="color:var(--text-muted)">${u.email || '-'}</td>
+          <td>${u.gender || '-'}</td>
+          <td>${u.age || '-'}</td>
+          <td><span class="role-badge ${u.role === 'teacher' ? 'role-teacher' : 'role-student'}">${u.role === 'teacher' ? '👨‍🏫 อาจารย์' : '👨‍🎓 นักเรียน'}</span></td>
+          <td style="max-width:150px;color:var(--text-muted);font-size:0.85rem">${u.description || '-'}</td>
+          <td style="max-width:200px">${enrollHtml}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick='openUserModal(${JSON.stringify(u)})'>✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.firstname} ${u.lastname}')">🗑️</button>
+          </td>
+        </tr>`
+    }
+    tbody.innerHTML = html
+}
+
+function filterUsers() {
+    const q = document.getElementById('user-search').value.toLowerCase()
+    renderUsers(allUsers.filter(u =>
+        `${u.firstname} ${u.lastname}`.toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q)
+    ))
+}
+
+function openUserModal(u) {
+    document.getElementById('user-edit-id').value = u.id
+    document.getElementById('user-firstname').value = u.firstname || ''
+    document.getElementById('user-lastname').value = u.lastname || ''
+    document.getElementById('user-email').value = u.email || ''
+    document.getElementById('user-age').value = u.age || ''
+    document.getElementById('user-gender').value = u.gender || ''
+    document.getElementById('user-description').value = u.description || ''
+    document.getElementById('user-role').value = u.role || 'student'
+    document.getElementById('user-modal').classList.add('show')
+}
+
+async function saveUser() {
+    const id = document.getElementById('user-edit-id').value
+    const body = {
+        firstname: document.getElementById('user-firstname').value,
+        lastname: document.getElementById('user-lastname').value,
+        email: document.getElementById('user-email').value,
+        age: document.getElementById('user-age').value,
+        gender: document.getElementById('user-gender').value,
+        description: document.getElementById('user-description').value,
+        role: document.getElementById('user-role').value
+    }
+    try {
+        await Users.update(id, body)
+        showAlert('user-alert', 'บันทึกสำเร็จ!', 'success')
+        setTimeout(() => { closeModal('user-modal'); loadUsers() }, 800)
+    } catch (e) { showAlert('user-alert', e.message) }
+}
+
+function deleteUser(id, name) {
+    confirmDelete(`ลบ "${name}" และข้อมูลการลงทะเบียนทั้งหมด?`, async () => {
+        try {
+            const enrollments = await Enrollments.getByUser(id)
+            for (const e of enrollments) await Enrollments.cancel(e.id)
+            await Users.remove(id)
+            loadUsers()
+        } catch (e) { alert(e.message) }
+    })
+}
+
+// ===== COURSE WIZARD =====
+let thumbImgSrc = '', thumbX = 0, thumbY = 0, thumbScale = 1
+let thumbDragging = false, thumbStartX, thumbStartY, thumbStartImgX, thumbStartImgY
+let thumbDataUrl = ''
+let wizardLessons = [] // [{id, title}]
+let wizardExercises = [] // [{lesson_id, question, ...}]
+let currentCourseId = null
+
+function openCourseModal(c = null) {
+    document.getElementById('course-modal-title').textContent = c ? '✏️ แก้ไขคอร์ส' : '➕ เพิ่มคอร์ส'
+    document.getElementById('course-id').value = c?.id || ''
+    document.getElementById('course-name').value = c?.name || ''
+    document.getElementById('course-desc').value = c?.description || ''
+    thumbDataUrl = c?.thumbnail || ''
+    wizardLessons = []; wizardExercises = []
+    if (thumbDataUrl) {
+        document.getElementById('thumb-img').src = thumbDataUrl
+        document.getElementById('thumb-img').style.display = 'block'
+        document.getElementById('thumb-placeholder').style.display = 'none'
+    } else {
+        document.getElementById('thumb-img').style.display = 'none'
+        document.getElementById('thumb-placeholder').style.display = 'block'
+    }
+    goStep(1)
+    document.getElementById('course-modal').classList.add('show')
+}
+
+function closeWizard() {
+    document.getElementById('course-modal').classList.remove('show')
+    currentCourseId = null
+}
+
+function goStep(n) {
+    for (let i = 1; i <= 3; i++) {
+        document.getElementById(`wizard-step-${i}`).style.display = i === n ? 'block' : 'none'
+        const dot = document.getElementById(`step-dot-${i}`)
+        dot.classList.remove('active', 'done')
+        if (i === n) dot.classList.add('active')
+        else if (i < n) dot.classList.add('done')
+    }
+    for (let i = 1; i <= 2; i++) {
+        const line = document.getElementById(`step-line-${i}`)
+        if (line) line.classList.toggle('done', i < n)
+    }
+}
+
+async function saveCourseStep1() {
+    const id = document.getElementById('course-id').value
+    const user = getUser()
+    const body = {
+        name: document.getElementById('course-name').value,
+        description: document.getElementById('course-desc').value,
+        user_id: user.id,
+        thumbnail: thumbDataUrl || null
+    }
+    if (!body.name) return showAlert('course-alert', 'กรุณากรอกชื่อคอร์ส')
+    try {
+        if (id) {
+            await Courses.update(id, body)
+            currentCourseId = parseInt(id)
+        } else {
+            const result = await Courses.create(body)
+            currentCourseId = result.data.insertId
+        }
+        document.getElementById('new-course-id').value = currentCourseId
+        document.getElementById('lessons-added').innerHTML = ''
+        wizardLessons = []
+        goStep(2)
+        loadCourses()
+    } catch (e) { showAlert('course-alert', e.message) }
+}
+
+async function addLesson() {
+    const title = document.getElementById('w-lesson-title').value
+    const content = document.getElementById('w-lesson-content').value
+    if (!title) return showAlert('lesson-alert2', 'กรุณากรอกชื่อบทเรียน')
+    try {
+        const result = await Lessons.create({ title, content, course_id: currentCourseId })
+        wizardLessons.push({ id: result.data.insertId, title })
+        renderLessonsAdded()
+        document.getElementById('w-lesson-title').value = ''
+        document.getElementById('w-lesson-content').value = ''
+        showAlert('lesson-alert2', `เพิ่ม "${title}" สำเร็จ!`, 'success')
+    } catch (e) { showAlert('lesson-alert2', e.message) }
+}
+
+function renderLessonsAdded() {
+    document.getElementById('lessons-added').innerHTML = wizardLessons.map(l => `
+        <div class="lesson-chip">📖 ${l.title}</div>
+      `).join('')
+    // อัพเดท dropdown ใน step 3
+    document.getElementById('w-ex-lesson').innerHTML = wizardLessons.map(l =>
+        `<option value="${l.id}">${l.title}</option>`
+    ).join('')
+}
+
+async function addExercise() {
+    const lesson_id = document.getElementById('w-ex-lesson').value
+    const question = document.getElementById('w-ex-question').value
+    const choice_a = document.getElementById('w-ex-a').value
+    const choice_b = document.getElementById('w-ex-b').value
+    const choice_c = document.getElementById('w-ex-c').value
+    const choice_d = document.getElementById('w-ex-d').value
+    const answer = document.getElementById('w-ex-answer').value
+    if (!question) return showAlert('ex-alert2', 'กรุณากรอกคำถาม')
+    if (!lesson_id) return showAlert('ex-alert2', 'กรุณาเลือกบทเรียนก่อน')
+    try {
+        await Exercises.create({ lesson_id, question, choice_a, choice_b, choice_c, choice_d, answer })
+        wizardExercises.push({ question })
+        document.getElementById('exercises-added').innerHTML = wizardExercises.map(e =>
+            `<div class="ex-chip">🎯 ${e.question.substring(0, 40)}${e.question.length > 40 ? '...' : ''}</div>`
+        ).join('')
+        document.getElementById('w-ex-question').value = ''
+        document.getElementById('w-ex-a').value = ''
+        document.getElementById('w-ex-b').value = ''
+        document.getElementById('w-ex-c').value = ''
+        document.getElementById('w-ex-d').value = ''
+        showAlert('ex-alert2', 'เพิ่มแบบฝึกสำเร็จ!', 'success')
+    } catch (e) { showAlert('ex-alert2', e.message) }
+}
+
+function finishWizard() {
+    closeWizard()
+    loadCourses()
+    alert('✅ สร้างคอร์สสำเร็จ!')
+}
+
+function deleteCourse(id, name) {
+    confirmDelete(`ลบคอร์ส "${name}"?`, async () => {
+        try { await Courses.remove(id); loadCourses() } catch (e) { alert(e.message) }
+    })
+}
+
+// ===== THUMB CROP =====
+function openThumbCrop(event) {
+    const file = event.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+        thumbImgSrc = e.target.result
+        const img = document.getElementById('thumb-crop-img')
+        img.onload = () => {
+            const container = document.getElementById('thumb-crop-container')
+            const scale = Math.max(container.offsetWidth / img.naturalWidth, container.offsetHeight / img.naturalHeight)
+            thumbScale = scale
+            thumbX = (container.offsetWidth - img.naturalWidth * scale) / 2
+            thumbY = (container.offsetHeight - img.naturalHeight * scale) / 2
+            document.getElementById('thumb-zoom').value = scale
+            document.getElementById('thumb-zoom').min = scale * 0.5
+            document.getElementById('thumb-zoom').max = scale * 4
+            thumbUpdateTransform()
+        }
+        img.src = thumbImgSrc
+        document.getElementById('thumb-crop-modal').classList.add('show')
+        event.target.value = ''
+    }
+    reader.readAsDataURL(file)
+}
+
+function thumbUpdateZoom() {
+    const container = document.getElementById('thumb-crop-container')
+    const newScale = parseFloat(document.getElementById('thumb-zoom').value)
+    const cx = container.offsetWidth / 2
+    const cy = container.offsetHeight / 2
+    thumbX = cx - (cx - thumbX) * (newScale / thumbScale)
+    thumbY = cy - (cy - thumbY) * (newScale / thumbScale)
+    thumbScale = newScale
+    thumbUpdateTransform()
+}
+
+function thumbUpdateTransform() {
+    const img = document.getElementById('thumb-crop-img')
+    img.style.transform = `translate(${thumbX}px, ${thumbY}px) scale(${thumbScale})`
+}
+
+function thumbStartDrag(e) {
+    thumbDragging = true
+    const pos = e.touches ? e.touches[0] : e
+    thumbStartX = pos.clientX; thumbStartY = pos.clientY
+    thumbStartImgX = thumbX; thumbStartImgY = thumbY
+    e.preventDefault()
+}
+
+function thumbDoDrag(e) {
+    if (!thumbDragging) return
+    const pos = e.touches ? e.touches[0] : e
+    thumbX = thumbStartImgX + (pos.clientX - thumbStartX)
+    thumbY = thumbStartImgY + (pos.clientY - thumbStartY)
+    thumbUpdateTransform()
+    e.preventDefault()
+}
+
+function thumbStopDrag() { thumbDragging = false }
+
+function applyThumbCrop() {
+    const container = document.getElementById('thumb-crop-container')
+    const canvas = document.createElement('canvas')
+    canvas.width = container.offsetWidth * 2
+    canvas.height = container.offsetHeight * 2
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.src = thumbImgSrc
+    const scale = thumbScale * 2
+    ctx.drawImage(img, thumbX * 2, thumbY * 2, img.naturalWidth * scale, img.naturalHeight * scale)
+    thumbDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+    document.getElementById('thumb-img').src = thumbDataUrl
+    document.getElementById('thumb-img').style.display = 'block'
+    document.getElementById('thumb-placeholder').style.display = 'none'
+    closeThumbCrop()
+}
+
+function closeThumbCrop() {
+    document.getElementById('thumb-crop-modal').classList.remove('show')
+}
+
+// ===== COURSES =====
+async function loadCourses() {
+    try {
+        allCourses = await Courses.getAll()
+        document.getElementById('courses-table').innerHTML = allCourses.map(c => `
+          <tr>
+            <td>${c.id}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:0.75rem">
+                ${c.thumbnail
+                ? `<img src="${c.thumbnail}" style="width:48px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0">`
+                : `<div style="width:48px;height:36px;border-radius:6px;background:var(--gradient1);flex-shrink:0"></div>`
+            }
+                <strong>${c.name}</strong>
+              </div>
+            </td>
+            <td style="color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.description || '-'}</td>
+            <td>${c.firstname || ''} ${c.lastname || ''}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick='openCourseModal(${JSON.stringify(c)})'>✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteCourse(${c.id},'${c.name}')">🗑️</button>
+            </td>
+          </tr>`).join('')
+    } catch (e) { console.error(e) }
+}
+async function loadCoursesForFilter() {
+    allCourses = await Courses.getAll()
+    const opts = allCourses.map(c => `<option value="${c.id}">${c.name}</option>`).join('')
+    document.getElementById('lesson-course-filter').innerHTML = '<option value="">-- เลือกคอร์ส --</option>' + opts
+    document.getElementById('lesson-course-id').innerHTML = opts
+}
+
+async function loadLessons() {
+    const course_id = document.getElementById('lesson-course-filter').value
+    if (!course_id) return
+    try {
+        allLessons = await Lessons.getByCourse(course_id)
+        document.getElementById('lessons-table').innerHTML = allLessons.map(l => `
+          <tr>
+            <td>${l.id}</td>
+            <td><strong>${l.title}</strong></td>
+            <td style="color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.content || '-'}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick='openLessonModal(${JSON.stringify(l)})'>✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteLesson(${l.id},'${l.title}')">🗑️</button>
+            </td>
+          </tr>`).join('')
+    } catch (e) { console.error(e) }
+}
+
+function openLessonModal(l = null) {
+    document.getElementById('lesson-modal-title').textContent = l ? '✏️ แก้ไขบทเรียน' : '➕ เพิ่มบทเรียน'
+    document.getElementById('lesson-id').value = l?.id || ''
+    document.getElementById('lesson-title').value = l?.title || ''
+    document.getElementById('lesson-content').value = l?.content || ''
+    if (l) document.getElementById('lesson-course-id').value = l.course_id
+    document.getElementById('lesson-modal').classList.add('show')
+}
+
+async function saveLesson() {
+    const id = document.getElementById('lesson-id').value
+    const body = { title: document.getElementById('lesson-title').value, content: document.getElementById('lesson-content').value, course_id: document.getElementById('lesson-course-id').value }
+    try {
+        if (id) await Lessons.update(id, body); else await Lessons.create(body)
+        showAlert('lesson-alert', 'บันทึกสำเร็จ!', 'success')
+        setTimeout(() => { closeModal('lesson-modal'); loadLessons() }, 800)
+    } catch (e) { showAlert('lesson-alert', e.message) }
+}
+
+function deleteLesson(id, name) {
+    confirmDelete(`ลบบทเรียน "${name}"?`, async () => {
+        try { await Lessons.remove(id); loadLessons() } catch (e) { alert(e.message) }
+    })
+}
+
+// ===== EXERCISES =====
+async function loadLessonsForFilter() {
+    allCourses = await Courses.getAll()
+    if (!allCourses.length) return
+    const lessons = await Lessons.getByCourse(allCourses[0].id)
+    allLessons = lessons
+    const opts = lessons.map(l => `<option value="${l.id}">${l.title}</option>`).join('')
+    document.getElementById('ex-lesson-filter').innerHTML = '<option value="">-- เลือกบทเรียน --</option>' + opts
+    document.getElementById('ex-lesson-id').innerHTML = opts
+}
+
+async function loadExercises() {
+    const lesson_id = document.getElementById('ex-lesson-filter').value
+    if (!lesson_id) return
+    try {
+        const exercises = await Exercises.getByLesson(lesson_id)
+        document.getElementById('exercises-table').innerHTML = exercises.map(ex => `
+          <tr>
+            <td>${ex.id}</td>
+            <td style="max-width:180px">${ex.question}</td>
+            <td>${ex.choice_a || '-'}</td><td>${ex.choice_b || '-'}</td>
+            <td>${ex.choice_c || '-'}</td><td>${ex.choice_d || '-'}</td>
+            <td><span class="badge badge-success">${ex.answer?.toUpperCase()}</span></td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick='openExerciseModal(${JSON.stringify(ex)})'>✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteExercise(${ex.id})">🗑️</button>
+            </td>
+          </tr>`).join('')
+    } catch (e) { console.error(e) }
+}
+
+function openExerciseModal(ex = null) {
+    document.getElementById('ex-modal-title').textContent = ex ? '✏️ แก้ไขแบบฝึก' : '➕ เพิ่มแบบฝึก'
+    document.getElementById('ex-id').value = ex?.id || ''
+    document.getElementById('ex-question').value = ex?.question || ''
+    document.getElementById('ex-a').value = ex?.choice_a || ''
+    document.getElementById('ex-b').value = ex?.choice_b || ''
+    document.getElementById('ex-c').value = ex?.choice_c || ''
+    document.getElementById('ex-d').value = ex?.choice_d || ''
+    document.getElementById('ex-answer').value = ex?.answer || 'a'
+    if (ex) document.getElementById('ex-lesson-id').value = ex.lesson_id
+    document.getElementById('exercise-modal').classList.add('show')
+}
+
+async function saveExercise() {
+    const id = document.getElementById('ex-id').value
+    const body = {
+        lesson_id: document.getElementById('ex-lesson-id').value,
+        question: document.getElementById('ex-question').value,
+        choice_a: document.getElementById('ex-a').value,
+        choice_b: document.getElementById('ex-b').value,
+        choice_c: document.getElementById('ex-c').value,
+        choice_d: document.getElementById('ex-d').value,
+        answer: document.getElementById('ex-answer').value
+    }
+    try {
+        if (id) await Exercises.update(id, body); else await Exercises.create(body)
+        showAlert('ex-alert', 'บันทึกสำเร็จ!', 'success')
+        setTimeout(() => { closeModal('exercise-modal'); loadExercises() }, 800)
+    } catch (e) { showAlert('ex-alert', e.message) }
+}
+
+function deleteExercise(id) {
+    confirmDelete('ลบแบบฝึกนี้?', async () => {
+        try { await Exercises.remove(id); loadExercises() } catch (e) { alert(e.message) }
+    })
+}
+
+loadUsers()

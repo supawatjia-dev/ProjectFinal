@@ -34,7 +34,7 @@ async function loadMyCourses() {
       try { prog = await Progress.getCourseProgress(user.id, e.course_id) } catch { }
 
       html += `
-            <div class="course-card" onclick="window.location.href='../learn.html?course=${e.course_id}'">
+            <div class="course-card" onclick="window.location.href='../learn/learn.html?course=${e.course_id}'">
               <div class="course-card-header" style="background:${e.thumbnail ? 'none' : `linear-gradient(135deg,${c1},${c2})`}; padding:0; overflow:hidden">
   ${e.thumbnail
           ? `<img src="${e.thumbnail}" style="width:100%;height:100%;object-fit:cover">`

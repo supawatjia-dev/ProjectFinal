@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnHub — คอร์สทั้งหมด</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .search-bar {
+      background: var(--dark2);
+      border-radius: 50px;
+      border: 1px solid rgba(108, 99, 255, 0.2);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 500px;
+    }
+
+    .search-bar input {
+      background: none;
+      border: none;
+      color: var(--white);
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      flex: 1;
+      outline: none;
+    }
+
+    .course-colors {
+      background-image: linear-gradient(135deg, var(--c1), var(--c2));
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="container" style="padding-top:2rem">
+    <div class="page-header"
+      style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; padding:0 0 1.5rem">
+      <div>
+        <div class="page-title">📚 คอร์สทั้งหมด</div>
+        <div class="page-subtitle">เลือกเรียนคอร์สที่คุณสนใจ</div>
+      </div>
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="search" placeholder="ค้นหาคอร์ส..." oninput="filterCourses()">
+      </div>
+    </div>
+
+    <div id="courses-grid" class="grid-3">
+      <div style="grid-column:1/-1; text-align:center; padding:3rem">
+        <div class="spinner"></div>
+        <div style="color:var(--text-muted); margin-top:1rem">กำลังโหลดคอร์ส...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script>
+    requireAuth()
+    renderNavbar('courses')
+
+    const COLORS = [
+      ['#6C63FF', '#FF6584'], ['#43D9AD', '#6C63FF'],
+      ['#FFB347', '#FF6B6B'], ['#A8EDEA', '#FED6E3'],
+      ['#667EEA', '#764BA2'], ['#F093FB', '#F5576C']
+    ]
+    const EMOJIS = ['🚀', '💡', '🎨', '⚡', '🔥', '🌟', '💎', '🎯', '🏆', '📖']
+
+    let allCourses = []
+
+    async function loadCourses() {
+      try {
+        allCourses = await Courses.getAll()
+        renderCourses(allCourses)
+      } catch (e) {
+        document.getElementById('courses-grid').innerHTML = `
+          <div style="grid-column:1/-1">
+            <div class="empty-state">
+              <div class="empty-state-icon">😢</div>
+              <div class="empty-state-text">โหลดคอร์สไม่ได้: ${e.message}</div>
+            </div>
+          </div>`
+      }
+    }
+
+    function renderCourses(courses) {
+      const grid = document.getElementById('courses-grid')
+      const isTeacher = getUser()?.role === 'teacher'
+      if (!courses.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">ยังไม่มีคอร์ส</div></div></div>`
+        return
+      }
+      grid.innerHTML = courses.map((c, i) => {
+        const [c1, c2] = COLORS[i % COLORS.length]
+        const emoji = EMOJIS[i % EMOJIS.length]
+        return `
+          <div class="course-card" onclick="window.location.href='learn.html?course=${c.id}'">
+            <div class="course-card-header" style="background:${c.thumbnail ? 'none' : `linear-gradient(135deg,${c1},${c2})`}; padding:0; overflow:hidden">
+              ${c.thumbnail
+            ? `<img src="${c.thumbnail}" style="width:100%;height:100%;object-fit:cover">`
+            : `<span style="font-size:3rem">${emoji}</span>`
+          }
+            </div>
+            <div class="course-card-body">
+              <div class="course-card-title">${c.name}</div>
+              <div class="course-card-desc">${c.description || 'ไม่มีคำอธิบาย'}</div>
+              <div style="display:flex; align-items:center; justify-content:space-between">
+                <span style="color:var(--text-muted); font-size:0.8rem">👨‍🏫 ${c.firstname || ''} ${c.lastname || ''}</span>
+                ${isTeacher
+            ? `<a href="management.html" class="btn btn-outline btn-sm" onclick="event.stopPropagation()">✏️ จัดการ</a>`
+            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enrollCourse(${c.id})">+ ลงทะเบียน</button>`
+          }
+              </div>
+            </div>
+          </div>`
+      }).join('')
+    }
+
+    function filterCourses() {
+      const q = document.getElementById('search').value.toLowerCase()
+      renderCourses(allCourses.filter(c => c.name.toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q)))
+    }
+
+    async function enrollCourse(course_id) {
+      const user = getUser()
+      try {
+        await Enrollments.enroll({ user_id: user.id, course_id })
+        alert('✅ ลงทะเบียนสำเร็จ!')
+      } catch (e) {
+        alert('⚠️ ' + e.message)
+      }
+    }
+
+    loadCourses()
+  </script>
+</body>
+
+</html>

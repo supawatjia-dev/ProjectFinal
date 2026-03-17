@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnHub — โปรไฟล์</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .profile-header {
+      background: linear-gradient(135deg, var(--dark2), var(--card));
+      border-radius: var(--radius);
+      border: 1px solid rgba(108,99,255,0.2);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .avatar-wrap {
+      position: relative;
+      width: 100px; height: 100px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .avatar {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: var(--gradient1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: white;
+      font-family: 'Baloo 2', cursive;
+      overflow: hidden;
+      border: 3px solid rgba(108,99,255,0.4);
+      transition: all 0.3s;
+    }
+
+    .avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+
+    .avatar-overlay {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 1.5rem;
+    }
+
+    .avatar-wrap:hover .avatar-overlay { opacity: 1; }
+
+    .profile-name {
+      font-family: 'Baloo 2', cursive;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--white);
+    }
+
+    .progress-course-item {
+      background: var(--dark2);
+      border-radius: var(--radius);
+      border: 1px solid rgba(108,99,255,0.15);
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s;
+    }
+
+    .progress-course-item:hover { border-color: rgba(108,99,255,0.4); }
+
+    /* CROP MODAL */
+    .crop-container {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: #000;
+      overflow: hidden;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+    }
+
+    #crop-image {
+      max-width: 100%;
+      display: block;
+    }
+
+    .crop-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .crop-circle {
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      border: 3px solid var(--primary);
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+
+    .crop-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .crop-controls input[type=range] {
+      flex: 1;
+      accent-color: var(--primary);
+    }
+
+    .preview-circle {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid var(--primary);
+      flex-shrink: 0;
+    }
+
+    .preview-circle canvas {
+      width: 100%; height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="container" style="padding-top:2rem; padding-bottom:3rem">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="avatar-wrap" onclick="document.getElementById('avatar-input').click()">
+        <div class="avatar" id="avatar-display">?</div>
+        <div class="avatar-overlay">📷</div>
+        <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="openCropModal(event)">
+      </div>
+      <div style="flex:1">
+        <div class="profile-name" id="profile-name">กำลังโหลด...</div>
+        <div style="color:var(--text-muted)" id="profile-email"></div>
+        <div style="color:var(--text-muted); font-size:0.9rem; margin-top:0.25rem" id="profile-desc"></div>
+        <div style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap" id="profile-badges"></div>
+      </div>
+      <button class="btn btn-outline" onclick="openEditModal()">✏️ แก้ไขโปรไฟล์</button>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-bottom:2rem">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(108,99,255,0.2)">📚</div>
+        <div><div class="stat-value" id="stat-enrolled">-</div><div class="stat-label">คอร์สที่ลงทะเบียน</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(67,217,173,0.2)">✅</div>
+        <div><div class="stat-value" id="stat-completed">-</div><div class="stat-label">บทเรียนที่เรียนแล้ว</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(255,179,71,0.2)">🏆</div>
+        <div><div class="stat-value" id="stat-score">-</div><div class="stat-label">คะแนนเฉลี่ย</div></div>
+      </div>
+    </div>
+
+    <!-- Progress per course -->
+    <div class="page-title" style="margin-bottom:1rem; font-size:1.3rem">📊 ความคืบหน้าในแต่ละคอร์ส</div>
+    <div id="progress-list"><div class="spinner"></div></div>
+  </div>
+
+  <!-- CROP MODAL -->
+  <div class="modal-overlay" id="crop-modal">
+    <div class="modal" style="max-width:520px">
+      <div class="modal-title">✂️ ครอปรูปโปรไฟล์</div>
+      <div class="crop-container" id="crop-container"
+           onmousedown="startDrag(event)" ontouchstart="startDrag(event)"
+           onmousemove="doDrag(event)" ontouchmove="doDrag(event)"
+           onmouseup="stopDrag()" ontouchend="stopDrag()">
+        <img id="crop-image" draggable="false">
+        <div class="crop-overlay"><div class="crop-circle"></div></div>
+      </div>
+
+      <div class="crop-controls">
+        <span style="color:var(--text-muted); font-size:0.85rem">🔍 ซูม</span>
+        <input type="range" id="zoom-slider" min="0.5" max="3" step="0.01" value="1" oninput="updateZoom()">
+        <div class="preview-circle">
+          <canvas id="preview-canvas" width="80" height="80"></canvas>
+        </div>
+      </div>
+
+      <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem; text-align:center">
+        ลากรูปเพื่อเลือกตำแหน่ง • เลื่อน slider เพื่อซูม
+      </div>
+
+      <div style="display:flex; gap:1rem">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="applyCrop()">✅ ใช้รูปนี้</button>
+        <button class="btn btn-outline" onclick="closeCropModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-title">✏️ แก้ไขโปรไฟล์</div>
+      <div id="edit-alert" class="alert"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+        <div class="form-group"><label class="form-label">ชื่อ</label><input type="text" id="edit-firstname" class="form-control"></div>
+        <div class="form-group"><label class="form-label">นามสกุล</label><input type="text" id="edit-lastname" class="form-control"></div>
+      </div>
+      <div class="form-group"><label class="form-label">อีเมล</label><input type="email" id="edit-email" class="form-control"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+        <div class="form-group"><label class="form-label">อายุ</label><input type="number" id="edit-age" class="form-control"></div>
+        <div class="form-group"><label class="form-label">เพศ</label>
+          <select id="edit-gender" class="form-control">
+            <option value="">-- เลือก --</option>
+            <option value="male">ชาย</option>
+            <option value="female">หญิง</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">แนะนำตัวเอง</label><textarea id="edit-description" class="form-control" rows="2"></textarea></div>
+      <div style="display:flex; gap:1rem; margin-top:1rem">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveProfile()">💾 บันทึก</button>
+        <button class="btn btn-outline" onclick="closeModal('edit-modal')">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script>
+    requireAuth()
+    renderNavbar('profile')
+    let user = getUser()
+
+    // ===== INIT =====
+    async function init() {
+      updateAvatarDisplay()
+      document.getElementById('profile-name').textContent = `${user.firstname} ${user.lastname}`
+      document.getElementById('profile-email').textContent = user.email || ''
+      document.getElementById('profile-desc').textContent = user.description || ''
+
+      const badges = document.getElementById('profile-badges')
+      badges.innerHTML = `
+        <span class="badge ${user.role === 'teacher' ? 'badge-warning' : 'badge-success'}">
+          ${user.role === 'teacher' ? '👨‍🏫 อาจารย์' : '👨‍🎓 นักเรียน'}
+        </span>
+        ${user.age ? `<span class="badge badge-primary">🎂 ${user.age} ปี</span>` : ''}
+        ${user.gender ? `<span class="badge badge-primary">${user.gender === 'male' ? '♂️ ชาย' : '♀️ หญิง'}</span>` : ''}
+      `
+
+      try {
+        const enrollments = await Enrollments.getByUser(user.id)
+        document.getElementById('stat-enrolled').textContent = enrollments.length
+
+        const progress = await Progress.getByUser(user.id)
+        document.getElementById('stat-completed').textContent = progress.filter(p => p.is_completed).length
+
+        const results = await ExerciseResults.getByUser(user.id)
+        const correct = results.filter(r => r.is_correct).length
+        document.getElementById('stat-score').textContent = results.length ? Math.round(correct/results.length*100)+'%' : '0%'
+
+        renderProgressByCourse(enrollments)
+      } catch(e) { console.error(e) }
+    }
+
+    async function renderProgressByCourse(enrollments) {
+      const list = document.getElementById('progress-list')
+      if (!enrollments.length) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">ยังไม่ได้ลงทะเบียนคอร์สใด</div></div>`
+        return
+      }
+      let html = ''
+      for (const e of enrollments) {
+        try {
+          const prog = await Progress.getCourseProgress(user.id, e.course_id)
+          const pct = prog.percent || 0
+          html += `
+            <div class="progress-course-item">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem">
+                <div style="font-weight:700; color:var(--white)">📚 ${e.course_name || e.name}</div>
+                <div style="display:flex; align-items:center; gap:0.75rem">
+                  <span style="color:var(--text-muted); font-size:0.85rem">${prog.completed}/${prog.total} บทเรียน</span>
+                  <span class="badge ${pct===100?'badge-success':pct>0?'badge-primary':'badge-warning'}">${pct}%</span>
+                  <a href="learn.html?course=${e.course_id}" class="btn btn-primary btn-sm">เรียนต่อ →</a>
+                </div>
+              </div>
+              <div class="progress"><div class="progress-bar" style="width:${pct}%; background:${pct===100?'linear-gradient(135deg,#43D9AD,#00B894)':''}"></div></div>
+            </div>`
+        } catch {}
+      }
+      list.innerHTML = html
+    }
+
+    // ===== AVATAR =====
+    function updateAvatarDisplay() {
+      const el = document.getElementById('avatar-display')
+      if (user.avatar) {
+        el.innerHTML = `<img src="${user.avatar}" alt="avatar">`
+      } else {
+        el.textContent = (user.firstname || '?')[0].toUpperCase()
+      }
+    }
+
+    // ===== CROP =====
+    let imgSrc = '', imgX = 0, imgY = 0, imgScale = 1
+    let dragging = false, startX, startY, startImgX, startImgY
+    let naturalW, naturalH
+
+    function openCropModal(event) {
+      const file = event.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        imgSrc = e.target.result
+        const img = document.getElementById('crop-image')
+        img.onload = () => {
+          naturalW = img.naturalWidth
+          naturalH = img.naturalHeight
+          const container = document.getElementById('crop-container')
+          const scale = Math.max(container.offsetWidth / naturalW, container.offsetHeight / naturalH)
+          imgScale = scale
+          imgX = (container.offsetWidth - naturalW * scale) / 2
+          imgY = (container.offsetHeight - naturalH * scale) / 2
+          document.getElementById('zoom-slider').value = scale
+          document.getElementById('zoom-slider').min = scale * 0.5
+          document.getElementById('zoom-slider').max = scale * 4
+          updateTransform()
+          updatePreview()
+        }
+        img.src = imgSrc
+        document.getElementById('crop-modal').classList.add('show')
+        event.target.value = ''
+      }
+      reader.readAsDataURL(file)
+    }
+
+    function updateZoom() {
+      const container = document.getElementById('crop-container')
+      const newScale = parseFloat(document.getElementById('zoom-slider').value)
+      const cx = container.offsetWidth / 2
+      const cy = container.offsetHeight / 2
+      imgX = cx - (cx - imgX) * (newScale / imgScale)
+      imgY = cy - (cy - imgY) * (newScale / imgScale)
+      imgScale = newScale
+      updateTransform()
+      updatePreview()
+    }
+
+    function updateTransform() {
+      const img = document.getElementById('crop-image')
+      img.style.transform = `translate(${imgX}px, ${imgY}px) scale(${imgScale})`
+      img.style.transformOrigin = '0 0'
+      img.style.position = 'absolute'
+      img.style.top = '0'
+      img.style.left = '0'
+      img.style.maxWidth = 'none'
+    }
+
+    function startDrag(e) {
+      dragging = true
+      const pos = e.touches ? e.touches[0] : e
+      startX = pos.clientX
+      startY = pos.clientY
+      startImgX = imgX
+      startImgY = imgY
+      e.preventDefault()
+    }
+
+    function doDrag(e) {
+      if (!dragging) return
+      const pos = e.touches ? e.touches[0] : e
+      imgX = startImgX + (pos.clientX - startX)
+      imgY = startImgY + (pos.clientY - startY)
+      updateTransform()
+      updatePreview()
+      e.preventDefault()
+    }
+
+    function stopDrag() { dragging = false }
+
+    function updatePreview() {
+      const canvas = document.getElementById('preview-canvas')
+      const ctx = canvas.getContext('2d')
+      const container = document.getElementById('crop-container')
+      const circleSize = 220
+      const cx = (container.offsetWidth - circleSize) / 2
+      const cy = (container.offsetHeight - circleSize) / 2
+
+      ctx.clearRect(0, 0, 80, 80)
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(40, 40, 40, 0, Math.PI * 2)
+      ctx.clip()
+
+      const img = new Image()
+      img.src = imgSrc
+      const ratio = 80 / circleSize
+      ctx.drawImage(img,
+        (cx - imgX) / imgScale, (cy - imgY) / imgScale,
+        circleSize / imgScale, circleSize / imgScale,
+        0, 0, 80, 80
+      )
+      ctx.restore()
+    }
+
+    async function applyCrop() {
+      const canvas = document.createElement('canvas')
+      canvas.width = 300; canvas.height = 300
+      const ctx = canvas.getContext('2d')
+      const container = document.getElementById('crop-container')
+      const circleSize = 220
+      const cx = (container.offsetWidth - circleSize) / 2
+      const cy = (container.offsetHeight - circleSize) / 2
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(150, 150, 150, 0, Math.PI * 2)
+      ctx.clip()
+
+      const img = new Image()
+      img.src = imgSrc
+      ctx.drawImage(img,
+        (cx - imgX) / imgScale, (cy - imgY) / imgScale,
+        circleSize / imgScale, circleSize / imgScale,
+        0, 0, 300, 300
+      )
+      ctx.restore()
+
+      const dataUrl = canvas.toDataURL('image/png')
+
+      try {
+        // บันทึกลง DB
+        await Users.update(user.id, { avatar: dataUrl })
+        // อัพเดท localStorage ด้วย
+        const updated = { ...user, avatar: dataUrl }
+        localStorage.setItem('user', JSON.stringify(updated))
+        user = updated
+        updateAvatarDisplay()
+        closeCropModal()
+      } catch(e) {
+        alert('บันทึกรูปไม่สำเร็จ: ' + e.message)
+      }
+    }
+
+    function closeCropModal() {
+      document.getElementById('crop-modal').classList.remove('show')
+    }
+
+    // ===== EDIT PROFILE =====
+    function openEditModal() {
+      document.getElementById('edit-firstname').value = user.firstname || ''
+      document.getElementById('edit-lastname').value = user.lastname || ''
+      document.getElementById('edit-email').value = user.email || ''
+      document.getElementById('edit-age').value = user.age || ''
+      document.getElementById('edit-gender').value = user.gender || ''
+      document.getElementById('edit-description').value = user.description || ''
+      document.getElementById('edit-modal').classList.add('show')
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('show') }
+
+    async function saveProfile() {
+      const body = {
+        firstname: document.getElementById('edit-firstname').value,
+        lastname: document.getElementById('edit-lastname').value,
+        email: document.getElementById('edit-email').value,
+        age: document.getElementById('edit-age').value,
+        gender: document.getElementById('edit-gender').value,
+        description: document.getElementById('edit-description').value
+      }
+      try {
+        await Users.update(user.id, body)
+        const updated = { ...user, ...body }
+        localStorage.setItem('user', JSON.stringify(updated))
+        user = updated
+        showAlert('edit-alert', 'บันทึกสำเร็จ!', 'success')
+        setTimeout(() => { closeModal('edit-modal'); init() }, 800)
+      } catch(e) { showAlert('edit-alert', e.message) }
+    }
+
+    init()
+  </script>
+</body>
+</html>

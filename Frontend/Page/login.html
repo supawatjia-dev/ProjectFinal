@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnHub — เข้าสู่ระบบ</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 440px;
+      animation: slideUp 0.5s ease;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .auth-logo-text {
+      font-family: 'Baloo 2', cursive;
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: var(--gradient1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .auth-logo-sub {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .auth-card {
+      background: var(--dark2);
+      border-radius: 20px;
+      border: 1px solid rgba(108, 99, 255, 0.2);
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 0.6rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 10px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .auth-tab.active {
+      background: var(--gradient1);
+      color: white;
+      box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    .divider {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin: 1rem 0;
+      position: relative;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .divider::before {
+      left: 0;
+    }
+
+    .divider::after {
+      right: 0;
+    }
+
+    .floating-shapes {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.05;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .shape:nth-child(1) {
+      width: 300px;
+      height: 300px;
+      background: var(--primary);
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .shape:nth-child(2) {
+      width: 200px;
+      height: 200px;
+      background: var(--secondary);
+      bottom: -50px;
+      right: -50px;
+      animation-delay: 2s;
+    }
+
+    .shape:nth-child(3) {
+      width: 150px;
+      height: 150px;
+      background: var(--accent1);
+      top: 50%;
+      right: 10%;
+      animation-delay: 4s;
+    }
+
+    select option {
+      background: #1a1a2e;
+      color: #ffffff;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      50% {
+        transform: translateY(-20px) rotate(10deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="floating-shapes">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="auth-logo-text">🎓 LearnHub</div>
+      <div class="auth-logo-sub">ระบบการเรียนรู้ออนไลน์</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+        <button class="auth-tab" onclick="switchTab('register')">สมัครสมาชิก</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="tab-content active" id="tab-login">
+        <div id="login-alert" class="alert"></div>
+        <div class="form-group">
+          <label class="form-label">อีเมล</label>
+          <input type="email" id="login-email" class="form-control" placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">รหัสผ่าน</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem"
+          onclick="doLogin()">
+          🚀 เข้าสู่ระบบ
+        </button>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="tab-content" id="tab-register">
+        <div id="register-alert" class="alert"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+          <div class="form-group">
+            <label class="form-label">ชื่อ</label>
+            <input type="text" id="reg-firstname" class="form-control" placeholder="ชื่อ">
+          </div>
+          <div class="form-group">
+            <label class="form-label">นามสกุล</label>
+            <input type="text" id="reg-lastname" class="form-control" placeholder="นามสกุล">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">อีเมล</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">รหัสผ่าน</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="••••••••">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
+          <div class="form-group">
+            <label class="form-label">อายุ</label>
+            <input type="number" id="reg-age" class="form-control" placeholder="อายุ">
+          </div>
+          <div class="form-group">
+            <label class="form-label">เพศ</label>
+            <select id="reg-gender" class="form-control">
+              <option value="">-- เลือกเพศ --</option>
+              <option value="male">ชาย</option>
+              <option value="female">หญิง</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">แนะนำตัวเอง</label>
+          <textarea id="reg-description" class="form-control" rows="2" placeholder="แนะนำตัวเองสั้นๆ"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">สมัครในฐานะ</label>
+          <select id="reg-role" class="form-control">
+            <option value="student">👨‍🎓 นักเรียน</option>
+            <option value="teacher">👨‍🏫 อาจารย์</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem"
+          onclick="doRegister()">
+          ✨ สมัครสมาชิก
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/navbar.js"></script>
+  <script>
+    // ถ้า login อยู่แล้ว redirect
+    if (getUser()) window.location.href = 'courses.html'
+
+    function switchTab(tab) {
+      document.querySelectorAll('.auth-tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1))
+      })
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login')
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register')
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('login-email').value
+      const password = document.getElementById('login-password').value
+      if (!email || !password) return showAlert('login-alert', 'กรุณากรอกข้อมูลให้ครบ')
+      try {
+        const res = await Auth.login({ email, password })
+        localStorage.setItem('user', JSON.stringify(res.user || res))
+        window.location.href = 'courses.html'
+      } catch (e) {
+        showAlert('login-alert', e.message)
+      }
+    }
+
+    async function doRegister() {
+      const firstname = document.getElementById('reg-firstname').value
+      const lastname = document.getElementById('reg-lastname').value
+      const email = document.getElementById('reg-email').value
+      const password = document.getElementById('reg-password').value
+      const age = document.getElementById('reg-age').value
+      const gender = document.getElementById('reg-gender').value
+      const description = document.getElementById('reg-description').value
+      const role = document.getElementById('reg-role').value
+      if (!firstname || !lastname || !email || !password) return showAlert('register-alert', 'กรุณากรอกข้อมูลให้ครบ')
+      try {
+        await Auth.register({ firstname, lastname, email, password, age, gender, description, role })
+        showAlert('register-alert', 'สมัครสำเร็จ! กรุณาเข้าสู่ระบบ', 'success')
+        setTimeout(() => switchTab('login'), 1500)
+      } catch (e) {
+        showAlert('register-alert', e.message)
+      }
+    }
+
+    // Enter key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const active = document.querySelector('.tab-content.active').id
+        active === 'tab-login' ? doLogin() : doRegister()
+      }
+    })
+  </script>
+</body>
+
+</html>

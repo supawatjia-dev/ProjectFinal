@@ -30,7 +30,7 @@ const Auth = {
     // คืน avatar กลับมา
     Object.entries(avatars).forEach(([k, v]) => localStorage.setItem(k, v))
 
-    window.location.href = 'login.html'
+    window.location.href = '../login/login.html'
   }
 }
 
@@ -92,7 +92,7 @@ const ExerciseResults = {
 
 // guard — ถ้าไม่ได้ login redirect ไป login
 function requireAuth() {
-  if (!getUser()) window.location.href = 'login.html'
+  if (!getUser()) window.location.href = '../login/login.html'
 }
 
 // show alert helper

@@ -1,4 +1,4 @@
-if (getUser()) window.location.href = 'courses.html'
+if (getUser()) window.location.href = '../courses/courses.html'
 
 function switchTab(tab) {
     document.querySelectorAll('.auth-tab').forEach((t, i) => {
@@ -15,7 +15,7 @@ async function doLogin() {
     try {
         const res = await Auth.login({ email, password })
         localStorage.setItem('user', JSON.stringify(res.user || res))
-        window.location.href = 'courses.html'
+        window.location.href = '../courses/courses.html'
     } catch (e) {
         showAlert('login-alert', e.message)
     }

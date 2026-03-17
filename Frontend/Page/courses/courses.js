@@ -36,7 +36,7 @@ function renderCourses(courses) {
     const [c1, c2] = COLORS[i % COLORS.length]
     const emoji = EMOJIS[i % EMOJIS.length]
     return `
-          <div class="course-card" onclick="window.location.href='learn.html?course=${c.id}'">
+          <div class="course-card" onclick="window.location.href='../learn/learn.html?course=${c.id}'">
             <div class="course-card-header" style="background:${c.thumbnail ? 'none' : `linear-gradient(135deg,${c1},${c2})`}; padding:0; overflow:hidden">
               ${c.thumbnail
         ? `<img src="${c.thumbnail}" style="width:100%;height:100%;object-fit:cover">`

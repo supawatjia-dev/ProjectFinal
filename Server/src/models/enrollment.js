@@ -5,7 +5,7 @@ const findByUser = async (user_id) => {
   const [rows] = await conn.query(`
     SELECT enrollments.*, 
            users.firstname, users.lastname,
-           course.name AS course_name, course.description
+           course.name AS course_name, course.description,course.thumbnail
     FROM enrollments
     JOIN users ON enrollments.user_id = users.id
     JOIN course ON enrollments.course_id = course.id

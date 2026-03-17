@@ -9,7 +9,7 @@ let currentLesson = null
 let completedLessons = new Set()
 
 async function init() {
-    if (!courseId) return window.location.href = 'courses.html'
+    if (!courseId) return window.location.href = '../my-courses/my-courses.html'
     try {
         const course = await Courses.getById(courseId)
         document.getElementById('course-name').textContent = course.name
@@ -152,7 +152,7 @@ async function submitAll(exercises) {
 
     // redirect ไป my-courses หลัง 2 วินาที
     setTimeout(() => {
-        window.location.href = 'my-courses.html'
+        window.location.href = '../my-courses/my-courses.html'
     }, 2000)
 }
 

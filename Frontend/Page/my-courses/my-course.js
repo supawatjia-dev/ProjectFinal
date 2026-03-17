@@ -34,10 +34,13 @@ async function loadMyCourses() {
       try { prog = await Progress.getCourseProgress(user.id, e.course_id) } catch { }
 
       html += `
-            <div class="course-card" onclick="window.location.href='learn.html?course=${e.course_id}'">
-              <div class="course-card-header" style="background:linear-gradient(135deg,${c1},${c2})">
-                <span>${emoji}</span>
-              </div>
+            <div class="course-card" onclick="window.location.href='../learn.html?course=${e.course_id}'">
+              <div class="course-card-header" style="background:${e.thumbnail ? 'none' : `linear-gradient(135deg,${c1},${c2})`}; padding:0; overflow:hidden">
+  ${e.thumbnail
+          ? `<img src="${e.thumbnail}" style="width:100%;height:100%;object-fit:cover">`
+          : `<span style="font-size:3rem">${emoji}</span>`
+        }
+</div>
               <div class="course-card-body">
                 <div class="course-card-title">${e.course_name || e.name}</div>
                 <div class="course-card-desc">${e.description || 'ไม่มีคำอธิบาย'}</div>

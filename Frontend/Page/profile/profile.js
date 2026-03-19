@@ -51,7 +51,7 @@ async function renderProgressByCourse(enrollments) {
                 <div style="display:flex; align-items:center; gap:0.75rem">
                   <span style="color:var(--text-muted); font-size:0.85rem">${prog.completed}/${prog.total} บทเรียน</span>
                   <span class="badge ${pct === 100 ? 'badge-success' : pct > 0 ? 'badge-primary' : 'badge-warning'}">${pct}%</span>
-                  <a href="learn.html?course=${e.course_id}" class="btn btn-primary btn-sm">เรียนต่อ →</a>
+                  <a href="../learn/learn.html?course=${e.course_id}" class="btn btn-primary btn-sm">เรียนต่อ →</a>
                 </div>
               </div>
               <div class="progress"><div class="progress-bar" style="width:${pct}%; background:${pct === 100 ? 'linear-gradient(135deg,#43D9AD,#00B894)' : ''}"></div></div>

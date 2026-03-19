@@ -20,16 +20,8 @@ const Auth = {
   login: (body) => api('/users/login', { method: 'POST', body: JSON.stringify(body) }),
   register: (body) => api('/users/register', { method: 'POST', body: JSON.stringify(body) }),
   logout: () => {
-    // เก็บ avatar ไว้ก่อน
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('avatar_'))
-    const avatars = {}
-    keys.forEach(k => avatars[k] = localStorage.getItem(k))
-
+   
     localStorage.clear()
-
-    // คืน avatar กลับมา
-    Object.entries(avatars).forEach(([k, v]) => localStorage.setItem(k, v))
-
     window.location.href = '../login/login.html'
   }
 }

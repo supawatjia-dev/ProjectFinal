@@ -19,7 +19,7 @@ async function loadMyCourses() {
               <div class="empty-state">
                 <div class="empty-state-icon">📭</div>
                 <div class="empty-state-text">ยังไม่ได้ลงทะเบียนคอร์สใด</div>
-                <a href="courses.html" class="btn btn-primary" style="margin-top:1rem">ดูคอร์สทั้งหมด</a>
+                <a href="../courses/courses.html" class="btn btn-primary" style="margin-top:1rem">ดูคอร์สทั้งหมด</a>
               </div>
             </div>`
       return
@@ -52,7 +52,7 @@ async function loadMyCourses() {
                   <div class="progress"><div class="progress-bar" style="width:${prog.percent}%; background:${prog.percent === 100 ? 'linear-gradient(135deg,#43D9AD,#00B894)' : ''}"></div></div>
                 </div>
                 <div style="display:flex; gap:0.5rem">
-                  <a href="learn.html?course=${e.course_id}" class="btn btn-primary btn-sm" style="flex:1; justify-content:center">
+                  <a href="../learn/learn.html?course=${e.course_id}" class="btn btn-primary btn-sm" style="flex:1; justify-content:center">
                     ${prog.percent > 0 ? '▶️ เรียนต่อ' : '🚀 เริ่มเรียน'}
                   </a>
                   <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); cancelEnroll(${e.id})">ยกเลิก</button>

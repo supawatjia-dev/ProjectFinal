@@ -49,7 +49,7 @@ function renderCourses(courses) {
               <div style="display:flex; align-items:center; justify-content:space-between">
                 <span style="color:var(--text-muted); font-size:0.8rem">👨‍🏫 ${c.firstname || ''} ${c.lastname || ''}</span>
                 ${isTeacher
-        ? `<a href="management.html" class="btn btn-outline btn-sm" onclick="event.stopPropagation()">✏️ จัดการ</a>`
+        ? `<a href="../management/management.html" class="btn btn-outline btn-sm" onclick="event.stopPropagation()">✏️ จัดการ</a>`
         : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); enrollCourse(${c.id})">+ ลงทะเบียน</button>`
       }
               </div>

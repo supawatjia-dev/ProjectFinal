@@ -414,20 +414,35 @@ function deleteLesson(id, name) {
 
 // ===== EXERCISES =====
 async function loadLessonsForFilter() {
-    allCourses = await Courses.getAll()
-    if (!allCourses.length) return
-    const lessons = await Lessons.getByCourse(allCourses[0].id)
-    allLessons = lessons
-    const opts = lessons.map(l => `<option value="${l.id}">${l.title}</option>`).join('')
-    document.getElementById('ex-lesson-filter').innerHTML = '<option value="">-- เลือกบทเรียน --</option>' + opts
-    document.getElementById('ex-lesson-id').innerHTML = opts
+    try {
+        
+        const allCourses = await Courses.getAll();
+        if (!allCourses.length) return;
+        
+        const lessonsArray = await Promise.all(
+            allCourses.map(course => Lessons.getByCourse(course.id))
+        );
+        
+        const combinedLessons = lessonsArray.flat();
+        allLessons = combinedLessons;
+        
+        const opts = combinedLessons.map(l => 
+            `<option value="${l.id}">${l.title}</option>`
+        ).join('');
+        
+        document.getElementById('ex-lesson-filter').innerHTML = '<option value="">-- ทั้งหมด --</option>' + opts;
+        document.getElementById('ex-lesson-id').innerHTML = opts;
+    } catch (e) {
+        console.error("Error loading all lessons:", e);
+    }
 }
 
 async function loadExercises() {
     const lesson_id = document.getElementById('ex-lesson-filter').value
-    if (!lesson_id) return
     try {
-        const exercises = await Exercises.getByLesson(lesson_id)
+        const exercises = lesson_id 
+            ? await Exercises.getByLesson(lesson_id) 
+            : await Exercises.getAll();
         document.getElementById('exercises-table').innerHTML = exercises.map(ex => `
           <tr>
             <td>${ex.id}</td>

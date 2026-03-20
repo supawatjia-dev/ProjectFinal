@@ -44,8 +44,8 @@ const update = async (id, data) => {
   const conn = await getConnection()
   const { title, content, order_no } = data
   const [result] = await conn.query(
-    'UPDATE lessons SET title=?, content=?, WHERE id=?',
-    [title, content, order_no, id]
+    'UPDATE lessons SET title=?, content=? WHERE id=?',
+    [title, content, id]
   )
   return result
 }

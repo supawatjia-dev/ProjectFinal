@@ -489,9 +489,9 @@ async function saveExercise() {
     } catch (e) { showAlert('ex-alert', e.message) }
 }
 
-function deleteExercise(id) {
+function deleteExercise(id,lesson_id) {
     confirmDelete('ลบแบบฝึกนี้?', async () => {
-        try { await Exercises.remove(id); loadExercises() } catch (e) { alert(e.message) }
+        try { await Exercises.remove(lesson_id, id); loadExercises() } catch (e) { alert(e.message) }
     })
 }
 

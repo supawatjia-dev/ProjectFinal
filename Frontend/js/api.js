@@ -56,8 +56,8 @@ const Lessons = {
 const Exercises = {
   getByLesson: (lesson_id) => api(`/exercise/lesson/${lesson_id}`),
   create: (body) => api('/exercise', { method: 'POST', body: JSON.stringify(body) }),
-  update: (id, body) => api(`/exercise/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-  remove: (id) => api(`/exercise/${id}`, { method: 'DELETE' })
+  update: (id, body) => api(`/exercise/lesson/${body.lesson_id}/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  remove: (lesson_id, id) => api(`/exercise/lesson/${lesson_id}/${id}`, { method: 'DELETE' })
 }
 
 // ENROLLMENTS

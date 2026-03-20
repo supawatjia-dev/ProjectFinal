@@ -13,20 +13,20 @@ const findByUser = async (user_id) => {
   return rows
 }
 
-const getCourseProgress = async (user_id, coruse_id) => {
+const getCourseProgress = async (user_id, course_id) => {
   const conn = await getConnection()
   const [total] = await conn.query(
-    'SELECT COUNT(*) AS total FROM lessons WHERE coruse_id = ?',
-    [coruse_id]
+    'SELECT COUNT(*) AS total FROM lessons WHERE course_id = ?',
+    [course_id]
   )
   const [completed] = await conn.query(`
     SELECT COUNT(DISTINCT lesson_id) AS completed 
     FROM progress
     JOIN lessons ON progress.lesson_id = lessons.id
     WHERE progress.user_id = ? 
-    AND lessons.coruse_id = ? 
+    AND lessons.course_id = ? 
     AND progress.is_completed = 1
-  `, [user_id, coruse_id])
+  `, [user_id, course_id])
 
   const t = total[0].total
   const c = completed[0].completed

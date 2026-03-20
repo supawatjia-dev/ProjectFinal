@@ -48,6 +48,24 @@ const update = async (id, data) => {
 
 const remove = async (id) => {
   const conn = await getConnection()
+
+  const [lessons] = await conn.query('SELECT id FROM lessons WHERE course_id = ?', [id])
+
+  for (const lesson of lessons) {
+    
+    const [exercises] = await conn.query('SELECT id FROM exercises WHERE lesson_id = ?', [lesson.id])
+    for (const ex of exercises) {
+      await conn.query('DELETE FROM exercise_results WHERE exercise_id = ?', [ex.id])
+    }
+    
+    await conn.query('DELETE FROM exercises WHERE lesson_id = ?', [lesson.id])
+
+    await conn.query('DELETE FROM progress WHERE lesson_id = ?', [lesson.id])
+  }
+
+  await conn.query('DELETE FROM lessons WHERE course_id = ?', [id])
+
+  await conn.query('DELETE FROM enrollments WHERE course_id = ?', [id])
   const [result] = await conn.query('DELETE FROM course WHERE id = ?', [parseInt(id)])
   return result
 }

@@ -40,10 +40,10 @@ const update = async (id, data) => {
 
 const remove = async (id) => {
   const conn = await getConnection()
-  const [result] = await conn.query(
-    'DELETE FROM exercises WHERE id = ?',
-    [parseInt(id)]
-  )
+  
+  await conn.query('DELETE FROM exercise_results WHERE exercise_id = ?', [parseInt(id)])
+
+  const [result] = await conn.query('DELETE FROM exercises WHERE id = ?', [parseInt(id)])
   return result
 }
 
